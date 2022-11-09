@@ -59,6 +59,7 @@ resource "aws_db_instance" "example_db" {
   tags = merge(var.default_tags, {
     Name = "example_db_${var.environment}"
   })
+  auto_minor_version_upgrade = true
 }
 
 resource "aws_ssm_parameter" "example_ssm_db_host" {
@@ -106,12 +107,60 @@ resource "aws_s3_bucket" "my-private-bucket" {
   })
 }
 
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "storage" {
+  bucket = aws_s3_bucket.storage.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
+
+
+resource "aws_s3_bucket" "storage_log_bucket" {
+  bucket = "storage-log-bucket"
+}
+
+resource "aws_s3_bucket_logging" "storage" {
+  bucket = aws_s3_bucket.storage.id
+
+  target_bucket = aws_s3_bucket.storage_log_bucket.id
+  target_prefix = "log/"
+}
+
 resource "aws_s3_bucket" "public-bucket-oops" {
   bucket = "my-public-bucket-oops-demo"
   
   tags = merge(var.default_tags, {
     name = "example_public_${var.environment}"
   })
+}
+
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "storage" {
+  bucket = aws_s3_bucket.storage.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
+
+
+resource "aws_s3_bucket" "storage_log_bucket" {
+  bucket = "storage-log-bucket"
+}
+
+resource "aws_s3_bucket_logging" "storage" {
+  bucket = aws_s3_bucket.storage.id
+
+  target_bucket = aws_s3_bucket.storage_log_bucket.id
+  target_prefix = "log/"
 }
 
 resource "aws_s3_bucket_public_access_block" "private_access" {
@@ -131,6 +180,9 @@ resource "aws_s3_bucket_public_access_block" "public_access" {
   block_public_acls   = var.public_var
   block_public_policy = var.public_var
   restrict_public_buckets = var.public_var
+  restrict_public_buckets = true
+  block_public_policy = true
+  ignore_public_acls = true
 }
 
 resource "aws_s3_bucket_acl" "private_access_acl" {
